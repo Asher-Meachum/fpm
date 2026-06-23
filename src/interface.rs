@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::Link;
+use crate::types::Link;
 
 fn input() -> Result<String, io::Error> {
     let mut input = String::new();
@@ -23,6 +23,6 @@ pub fn get_link() -> Result<Link, io::Error> {
     let link = Link::new(name, upstream, downstream);
 
     println!("Stowing this:\n{}", link);
-    
+
     Ok(link)
 }

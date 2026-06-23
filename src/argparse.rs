@@ -26,7 +26,7 @@ pub struct CommandArg {
 }
 
 impl CommandArg {
-    pub fn get<'a>(&'a self) -> &'a String {
+    pub fn get(&self) -> &String {
         &self.argument
     }
 }

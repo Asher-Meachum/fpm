@@ -2,7 +2,7 @@ use std::fmt;
 use std::fs;
 use std::io;
 
-use crate::Link;
+use crate::types::Link;
 
 pub enum UpdateResult {
     Success(u64),
@@ -33,27 +33,22 @@ impl fmt::Display for Update {
 
 impl Update {
     pub fn new(name: String, status: UpdateResult) -> Self {
-        Update {
-            name,
-            status
-        }
+        Update { name, status }
     }
 
-    pub fn status<'a>(&'a self) -> &'a UpdateResult {
+    pub fn status(&self) -> &UpdateResult {
         &self.status
     }
 }
 
-pub fn update<'a>(files: &'a Vec<Link>) -> Vec<Update> {
+pub fn update(files: &Vec<Link>) -> Vec<Update> {
     let mut updates = Vec::new();
 
     for file in files {
-        match needs_update(&file) {
-            Ok(true) => {
-                match update_file(&file) {
-                    Ok(b) => updates.push(Update::new(file.name(), UpdateResult::Success(b))),
-                    Err(e) => updates.push(Update::new(file.name(), UpdateResult::Error(e))),
-                }
+        match needs_update(file) {
+            Ok(true) => match update_file(file) {
+                Ok(b) => updates.push(Update::new(file.name(), UpdateResult::Success(b))),
+                Err(e) => updates.push(Update::new(file.name(), UpdateResult::Error(e))),
             },
             Ok(false) => updates.push(Update::new(file.name(), UpdateResult::NotNeccesary)),
             Err(e) => updates.push(Update::new(file.name(), UpdateResult::Error(e))),
@@ -65,18 +60,18 @@ pub fn update<'a>(files: &'a Vec<Link>) -> Vec<Update> {
 
 fn update_file(files: &Link) -> Result<u64, io::Error> {
     // TODO: handle non-existent upstream
-    match fs::copy(files.upstream(), files.downstream()) {
-        Ok(b) => Ok(b),
-        Err(e) => Err(e) // TODO: Matching on error variants,
-    }
+    fs::copy(&files.upstream, &files.downstream)
 }
 
 fn needs_update(file: &Link) -> Result<bool, io::Error> {
-    let upstream = fs::File::open(file.upstream())?;
+    let upstream = fs::File::open(&file.upstream)?;
     let upstream_info = (upstream.metadata()?.len(), upstream.metadata()?.created()?);
 
-    let downstream = fs::File::open(file.downstream())?;
-    let downstream_info = (downstream.metadata()?.len(), downstream.metadata()?.created()?);
+    let downstream = fs::File::open(&file.downstream)?;
+    let downstream_info = (
+        downstream.metadata()?.len(),
+        downstream.metadata()?.created()?,
+    );
 
     if upstream_info.0 == downstream_info.0 {
         if upstream_info.1 == downstream_info.1 {

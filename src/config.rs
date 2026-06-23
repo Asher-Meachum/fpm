@@ -1,16 +1,14 @@
-use std::fmt;
 use std::env;
+use std::fmt;
 use std::fs::{self, File};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-use toml;
 use serde::Serialize;
 
-use crate::Link;
+use crate::types::{self, Link};
 
-#[derive(serde::Deserialize, Serialize)]
-#[derive(Debug)]
+#[derive(serde::Deserialize, Serialize, Debug)]
 pub struct Config {
     path: PathBuf,
     links: Vec<Link>,
@@ -26,20 +24,40 @@ impl fmt::Display for Config {
 }
 
 impl Config {
-   pub fn init() -> Config {
-        let home_dir = env::home_dir().expect("Yer hideout (home directory) couldn't be found. Can't go on without it.");
-        let mut config_path = PathBuf::from(home_dir);
-        config_path.push(".fpm.toml");
-        if !Path::new(&config_path).is_file() {
-            File::create(&config_path).expect("Couldn't stow my wares (config file) in yer hideout (home directory).");
+    pub fn init() -> Result<Config,types::Error> {
+        match env::home_dir() {
+            Some(d) => {
+                let mut config_path = d;
+
+                config_path.push(".fpm.toml");
+
+                if !Path::new(&config_path).is_file() {
+                    match File::create(&config_path) {
+                        Ok(_) => {
+                            let config = Config {
+                                path: config_path,
+                                links: Vec::new(),
+                            };
+                            Ok(config)
+                        }
+                        Err(_) => Err(types::Error::Fs),
+                    }
+                } else {
+                    let mut raw_config = String::new();
+                    match File::open(config_path) {
+                        Ok(mut f) => match f.read_to_string(&mut raw_config) {
+                            Ok(_) => match toml::from_str(raw_config.as_str()) {
+                                Ok(c) => Ok(c),
+                                Err(_) => Err(types::Error::Parse),
+                            },
+                            Err(_) => Err(types::Error::Fs),
+                        },
+                        Err(_) => Err(types::Error::Fs),
+                    }
+                }
+            }
+            None => Err(types::Error::Fs),
         }
-        
-        let mut raw_config = String::new();
-        File::open(config_path).unwrap().read_to_string(&mut raw_config).unwrap();
-
-        let config: Config = toml::from_str(raw_config.as_str()).unwrap();
-
-        config
     }
 
     pub fn add_link(&mut self, link: Link) {
@@ -47,15 +65,17 @@ impl Config {
     }
 
     pub fn remove_link(&mut self, name: impl ToString) {
-        self.links.retain(|x| x.name != name.to_string());
+        self.links.retain(|x| x.name() != name.to_string());
     }
 
-    pub fn links<'a>(&'a self) -> &'a Vec<Link> {
+    pub fn links(&self) -> &Vec<Link> {
         &self.links
     }
 
-    pub fn save(&mut self) {
-        let toml = toml::to_string(self).unwrap();
-        fs::write(self.path.clone(), toml).unwrap();
+    pub fn save(&mut self) -> Result<(), types::Error> {
+        let toml = toml::to_string(self)?;
+        fs::write(self.path.clone(), toml)?;
+
+        Ok(())
     }
 }
