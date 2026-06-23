@@ -42,6 +42,10 @@ impl Link {
     pub fn downstream(&self) -> String {
         self.downstream.clone()
     }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
 }
 
 fn main() {
@@ -70,9 +74,20 @@ fn main() {
             println!("Successfully removed: {}", name);
         },
         Commands::Update => {
-            for link in config.links() {
-                sync::update_file(link);
+            let mut changed: u64 = 0;
+            let result = sync::update(config.links());
+            
+            for r in result {
+                println!("{}", r);
+
+                match r.status() {
+                    sync::UpdateResult::Success(b) => changed += b,
+                    _ => continue,
+                }
             }
+
+            println!("Finished. {changed} bytes changed.")
+
         },
     }
 }
