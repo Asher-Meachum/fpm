@@ -12,6 +12,8 @@ use crate::argparse::{Cli, Commands};
 use crate::config::Config;
 
 fn main() {
+    println!("This project is licensed under GNU Public License 3.0.\n");
+
     let cli = Cli::parse();
     let mut config = match Config::init() {
         Ok(c) => c,
