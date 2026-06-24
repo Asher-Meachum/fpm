@@ -7,6 +7,22 @@ use std::path::Path;
 
 use crate::types::Link;
 
+fn pretty_ioerror(error: &io::Error) -> &'static str {
+    match error.kind() {
+        io::ErrorKind::FileTooLarge => "Problem loading file. File is too large.",
+        io::ErrorKind::Interrupted => "Interrupted.",
+        io::ErrorKind::InvalidFilename => "Invalid filename.",
+        io::ErrorKind::IsADirectory => "Is a directory. Make sure link points to a file.",
+        io::ErrorKind::NotFound => "File not found.",
+        io::ErrorKind::PermissionDenied => "Permission denied.",
+        io::ErrorKind::ReadOnlyFilesystem => "Could not write file. Filesystem is read-only.",
+        io::ErrorKind::ResourceBusy => "File busy",
+        io::ErrorKind::StorageFull => "Cannot write file. Storage is full",
+        io::ErrorKind::ExecutableFileBusy => "File busy",
+        _ => "Unknown error",
+    }
+}
+
 pub enum UpdateResult {
     Success(u64),
     NotNeccesary,
@@ -14,9 +30,10 @@ pub enum UpdateResult {
 }
 
 impl fmt::Display for UpdateResult {
+
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            UpdateResult::Error(e) => write!(f, "{}", e),
+            UpdateResult::Error(e) => write!(f, "{}", pretty_ioerror(e)),
             UpdateResult::NotNeccesary => write!(f, "No update necessary."),
             UpdateResult::Success(_) => write!(f, "Updated successfully"),
         }

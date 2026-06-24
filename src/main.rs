@@ -14,12 +14,7 @@ use crate::config::Config;
 fn main() {
     let cli = Cli::parse();
 
-    let custom_config = match cli.config.is_empty() {
-        true => None,
-        false => Some(cli.config)
-    };
-
-    let mut config = match Config::init(custom_config) {
+    let mut config = match Config::init(cli.config) {
         Ok(c) => c,
         Err(e) => {
             eprintln!("{}", e);

@@ -8,7 +8,7 @@ pub struct Cli {
     pub command: Commands,
 
     #[arg(long)]
-    pub config: String,
+    pub config: Option<String>,
 }
 
 #[derive(Subcommand)]
