@@ -49,3 +49,18 @@ pub fn overwrite_with_nonexistent(links: &Vec<Link>) -> Result<bool, io::Error> 
         _ => Ok(false),
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::interface::bytes_to_readable;
+
+    #[test]
+    fn makes_bytes_readable() {
+        let bytes = [897, 67271, 18185208, 3784245248, 3784245248784];
+        let annotation = [" B", "KB", "MB", "GB", "TB"];
+
+        for i in 0..5 {
+            assert!(bytes_to_readable(bytes[i]).contains(annotation[i]));
+        }
+    }
+}

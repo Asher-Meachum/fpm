@@ -24,39 +24,32 @@ impl fmt::Display for Config {
 }
 
 impl Config {
-    pub fn init() -> Result<Config,types::Error> {
-        match env::home_dir() {
-            Some(d) => {
-                let mut config_path = d;
-
-                config_path.push(".fpm.toml");
-
-                if !Path::new(&config_path).is_file() {
-                    match File::create(&config_path) {
-                        Ok(_) => {
-                            let config = Config {
-                                path: config_path,
-                                links: Vec::new(),
-                            };
-                            Ok(config)
-                        }
-                        Err(_) => Err(types::Error::Fs),
-                    }
-                } else {
-                    let mut raw_config = String::new();
-                    match File::open(config_path) {
-                        Ok(mut f) => match f.read_to_string(&mut raw_config) {
-                            Ok(_) => match toml::from_str(raw_config.as_str()) {
-                                Ok(c) => Ok(c),
-                                Err(_) => Err(types::Error::Parse),
-                            },
-                            Err(_) => Err(types::Error::Fs),
-                        },
-                        Err(_) => Err(types::Error::Fs),
-                    }
+    pub fn init(custom_config_dir: Option<String>) -> Result<Config, types::Error> {
+        let mut config_path = match custom_config_dir {
+            Some(p) => PathBuf::from(p),
+            None => {
+                match env::home_dir() {
+                    Some(b) => b,
+                    None => return Err(types::Error::Fs),
                 }
-            }
-            None => Err(types::Error::Fs),
+            },
+        };
+
+        config_path.push(".fpm.toml");
+
+        if !Path::new(&config_path).is_file() {
+            File::create(&config_path)?;
+            let config = Config {
+                path: config_path,
+                links: Vec::new(),
+            };
+
+            Ok(config)
+        } else {
+            let mut raw_config = String::new();
+            File::open(config_path)?.read_to_string(&mut raw_config)?;
+            let config = toml::from_str(raw_config.as_str())?;
+            Ok(config)
         }
     }
 

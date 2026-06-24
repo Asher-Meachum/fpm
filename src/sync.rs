@@ -2,8 +2,8 @@ use std::fmt;
 use std::fs;
 use std::fs::File;
 use std::io;
-use std::path::Path;
 use std::os::unix::fs::MetadataExt;
+use std::path::Path;
 
 use crate::types::Link;
 

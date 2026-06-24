@@ -4,7 +4,6 @@ use std::io;
 use clap::Args;
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Args, Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Link {
     name: String,
@@ -52,8 +51,14 @@ impl From<io::Error> for Error {
     }
 }
 
+impl From<toml::de::Error> for Error {
+    fn from(_value: toml::de::Error) -> Self {
+        Self::Parse
+    }
+}
+
 impl From<toml::ser::Error> for Error {
     fn from(_value: toml::ser::Error) -> Self {
-        Self::Parse   
+        Self::Parse
     }
 }
