@@ -1,6 +1,9 @@
 use std::fmt;
 use std::fs;
+use std::fs::File;
 use std::io;
+use std::path::Path;
+use std::os::unix::fs::MetadataExt;
 
 use crate::types::Link;
 
@@ -41,12 +44,25 @@ impl Update {
     }
 }
 
+pub fn upstream_not_exists(files: &Vec<Link>) -> Vec<Link> {
+    // TODO: get rid of unnecessary clones
+    let mut files = files.clone();
+
+    for file in files.clone() {
+        if Path::new(&file.upstream).is_file() {
+            files.retain(|f| f != &file);
+        }
+    }
+
+    files
+}
+
 pub fn update(files: &Vec<Link>) -> Vec<Update> {
     let mut updates = Vec::new();
 
     for file in files {
         match needs_update(file) {
-            Ok(true) => match update_file(file) {
+            Ok(true) => match update_file(file, true) {
                 Ok(b) => updates.push(Update::new(file.name(), UpdateResult::Success(b))),
                 Err(e) => updates.push(Update::new(file.name(), UpdateResult::Error(e))),
             },
@@ -58,9 +74,14 @@ pub fn update(files: &Vec<Link>) -> Vec<Update> {
     updates
 }
 
-fn update_file(files: &Link) -> Result<u64, io::Error> {
-    // TODO: handle non-existent upstream
-    fs::copy(&files.upstream, &files.downstream)
+fn update_file(files: &Link, upstream_exists: bool) -> Result<u64, io::Error> {
+    if upstream_exists {
+        fs::copy(&files.upstream, &files.downstream)
+    } else {
+        let size = File::open(&files.downstream)?.metadata()?.size();
+        fs::remove_file(&files.downstream)?;
+        Ok(size)
+    }
 }
 
 fn needs_update(file: &Link) -> Result<bool, io::Error> {

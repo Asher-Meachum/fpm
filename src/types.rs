@@ -5,7 +5,7 @@ use clap::Args;
 use serde::{Deserialize, Serialize};
 
 
-#[derive(Args, Clone, Debug, Deserialize, Serialize)]
+#[derive(Args, Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Link {
     name: String,
     pub upstream: String,
