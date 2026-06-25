@@ -56,26 +56,35 @@ fn main() {
         Commands::Update => {
             let mut changed: u64 = 0;
 
-            let upstream_doesnt_exist = sync::upstream_not_exists(config.links());
-            let overwrite_with_nonexistent =
-                match interface::overwrite_with_nonexistent(&upstream_doesnt_exist) {
-                    Ok(b) => b,
-                    Err(_) => {
-                        eprintln!("Error reading input. Not overwriting");
-                        false
-                    }
-                };
+            let mut final_links = config.links().clone();
 
-            let links = match overwrite_with_nonexistent {
-                true => config.links().clone(),
-                false => {
-                    let mut links = config.links().clone();
-                    links.retain(|link| !&upstream_doesnt_exist.contains(link));
-                    links
+            // Remove links listed by --ignore
+            if let Some(l) = cli.ignore {
+                let ignore = l.split(",").collect::<Vec<&str>>();
+                final_links.retain(|link| !ignore.contains(&link.name().as_str()));
+            }
+
+            let upstream_doesnt_exist = sync::upstream_not_exists(&final_links);
+            let overwrite_with_nonexistent = {
+                if cli.force {
+                    true
+                } else {
+                    match interface::overwrite_with_nonexistent(&upstream_doesnt_exist) {
+                        Ok(b) => b,
+                        Err(_) => {
+                            eprintln!("Error reading input. Not overwriting");
+                            false
+                        }
+                    }
                 }
             };
 
-            let result = sync::update(&links);
+            // Removes links that the upstream file doesn't exist, if overwite is set to disable.
+            if !overwrite_with_nonexistent {
+                final_links.retain(|link| !&upstream_doesnt_exist.contains(link));
+            }
+
+            let result = sync::update(&final_links);
 
             for r in result {
                 println!("{}", r);

@@ -27,11 +27,9 @@ impl Config {
     pub fn init(custom_config_dir: Option<String>) -> Result<Config, types::Error> {
         let mut config_path = match custom_config_dir {
             Some(p) => PathBuf::from(p),
-            None => {
-                match env::home_dir() {
-                    Some(b) => b,
-                    None => return Err(types::Error::Fs),
-                }
+            None => match env::home_dir() {
+                Some(b) => b,
+                None => return Err(types::Error::Fs),
             },
         };
 

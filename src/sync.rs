@@ -30,7 +30,6 @@ pub enum UpdateResult {
 }
 
 impl fmt::Display for UpdateResult {
-
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             UpdateResult::Error(e) => write!(f, "{}", pretty_ioerror(e)),

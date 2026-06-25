@@ -38,6 +38,9 @@ pub fn get_link() -> Result<Link, io::Error> {
 }
 
 pub fn overwrite_with_nonexistent(links: &Vec<Link>) -> Result<bool, io::Error> {
+    if links.is_empty() {
+        return Ok(true);
+    }
     println!("The upstream of the following links is not a file on the filesystem:");
     for link in links {
         println!("{}", link);

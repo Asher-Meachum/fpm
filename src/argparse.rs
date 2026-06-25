@@ -9,6 +9,12 @@ pub struct Cli {
 
     #[arg(long)]
     pub config: Option<String>,
+
+    #[arg(short, long)]
+    pub force: bool,
+
+    #[arg(long)]
+    pub ignore: Option<String>,
 }
 
 #[derive(Subcommand)]
