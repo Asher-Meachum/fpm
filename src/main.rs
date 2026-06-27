@@ -11,47 +11,40 @@ use clap::Parser;
 use crate::argparse::{Cli, Commands};
 use crate::config::Config;
 
-fn main() {
+fn action() -> Result<(), types::Error> {
     let cli = Cli::parse();
 
-    let mut config = match Config::init(cli.config) {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("{}", e);
-            process::exit(1);
-        }
-    };
+    let mut config = Config::init(cli.config)?;
 
     match &cli.command {
-        Commands::Add => match interface::get_link() {
-            Ok(link) => {
-                config.add_link(link.clone());
-                match config.save() {
-                    Ok(()) => println!("Successfully added {link}"),
-                    Err(e) => {
-                        eprint!("Error saving config: {e}");
-                        process::exit(1);
-                    }
-                }
-            }
-            Err(_) => {
-                eprintln!("Error: couldn't read from stdin.");
-                process::exit(1);
-            }
-        },
+        Commands::Add => {
+            let link = interface::get_link()?;
+
+            config.add_link(link.clone())?;
+
+            println!("Successfully added {link}");
+
+            Ok(())
+        }
         Commands::List => {
-            println!("{}", config)
+            println!("{}", config);
+            Ok(())
         }
         Commands::Remove(link_name) => {
             let name = link_name.get();
-            config.remove_link(name);
-            match config.save() {
-                Ok(()) => println!("Successfully removed: {}", name),
-                Err(e) => {
-                    eprintln!("Error saving config file: {e}");
-                    process::exit(1);
-                }
+
+            // Filter for if a link doesn't exist.
+            if config.links().iter().find(|l| &l.name() == name).is_none() {
+                println!("{name} is not a stored link.");
+                return Ok(());
             }
+
+            config.remove_link(name);
+            config.save()?;
+
+            println!("Successfully removed: {}", name);
+
+            Ok(())
         }
         Commands::Update => {
             let mut changed: u64 = 0;
@@ -98,7 +91,16 @@ fn main() {
             println!(
                 "Finished. {} changed.",
                 interface::bytes_to_readable(changed)
-            )
+            );
+
+            Ok(())
         }
+    }
+}
+
+fn main() {
+    if let Err(e) = action() {
+        eprintln!("An error occurred: {e}");
+        process::exit(0);
     }
 }

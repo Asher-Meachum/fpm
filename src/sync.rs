@@ -60,9 +60,8 @@ impl Update {
     }
 }
 
-pub fn upstream_not_exists(files: &Vec<Link>) -> Vec<Link> {
-    // TODO: get rid of unnecessary clones
-    let mut files = files.clone();
+pub fn upstream_not_exists(files: &[Link]) -> Vec<Link> {
+    let mut files = files.to_owned();
 
     for file in files.clone() {
         if Path::new(&file.upstream).is_file() {

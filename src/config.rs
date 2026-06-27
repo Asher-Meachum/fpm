@@ -27,10 +27,7 @@ impl Config {
     pub fn init(custom_config_dir: Option<String>) -> Result<Config, types::Error> {
         let mut config_path = match custom_config_dir {
             Some(p) => PathBuf::from(p),
-            None => match env::home_dir() {
-                Some(b) => b,
-                None => return Err(types::Error::Fs),
-            },
+            None => env::home_dir().ok_or(types::Error::Fs)?,
         };
 
         config_path.push(".fpm.toml");
@@ -51,8 +48,21 @@ impl Config {
         }
     }
 
-    pub fn add_link(&mut self, link: Link) {
+    pub fn add_link(&mut self, link: Link) -> Result<(), types::Error> {
+        if self
+            .links()
+            .iter()
+            .map(|l| l.name())
+            .collect::<Vec<String>>()
+            .contains(&link.name())
+        {
+            return Err(types::Error::LinkAlreadyExists);
+        }
+
         self.links.push(link);
+        self.save()?;
+
+        Ok(())
     }
 
     pub fn remove_link(&mut self, name: impl ToString) {

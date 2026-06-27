@@ -1,10 +1,11 @@
+use std::cmp;
 use std::fmt;
 use std::io;
 
 use clap::Args;
 use serde::{Deserialize, Serialize};
 
-#[derive(Args, Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Args, Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Link {
     name: String,
     pub upstream: String,
@@ -14,6 +15,12 @@ pub struct Link {
 impl fmt::Display for Link {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}: {} -> {}", self.name, self.upstream, self.downstream)
+    }
+}
+
+impl cmp::PartialOrd for Link {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        Some(self.name().cmp(&other.name()))
     }
 }
 
@@ -34,6 +41,7 @@ impl Link {
 pub enum Error {
     Fs,
     Parse,
+    LinkAlreadyExists,
 }
 
 impl fmt::Display for Error {
@@ -41,6 +49,7 @@ impl fmt::Display for Error {
         match self {
             Error::Fs => write!(f, "a filesystem error occured."),
             Error::Parse => write!(f, "a TOML parsing error occured"),
+            Error::LinkAlreadyExists => write!(f, "a link by that name already exists"),
         }
     }
 }
