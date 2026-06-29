@@ -1,7 +1,6 @@
 use std::fmt;
-use std::fs;
-use std::fs::File;
-use std::io;
+use std::fs::{self, File};
+use std::io::{self, BufReader, Read};
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
@@ -100,6 +99,10 @@ fn update_file(files: &Link, upstream_exists: bool) -> Result<u64, io::Error> {
 }
 
 fn needs_update(file: &Link) -> Result<bool, io::Error> {
+    if !Path::new(&file.downstream).is_file() {
+        return Ok(true);
+    }
+
     let upstream = fs::File::open(&file.upstream)?;
     let upstream_info = (upstream.metadata()?.len(), upstream.metadata()?.created()?);
 
@@ -113,10 +116,40 @@ fn needs_update(file: &Link) -> Result<bool, io::Error> {
         if upstream_info.1 == downstream_info.1 {
             Ok(false)
         } else {
-            // More checks here? Use hashing if it gets to here?
-            Ok(true)
+            if files_identical(file)? {
+                Ok(false)
+            } else {
+                Ok(true)
+            }
         }
     } else {
         Ok(true)
+    }
+}
+
+fn files_identical(files: &Link) -> Result<bool, io::Error> {
+    let upstream = BufReader::new(File::open(&files.upstream)?).bytes();
+    let downstream = BufReader::new(File::open(&files.downstream)?).bytes();
+
+    for (u, d) in std::iter::zip(upstream, downstream) {
+        if u? != d? {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{sync::files_identical, types::Link};
+
+    #[test]
+    fn matches_identical() {
+        let link = Link::new(
+            "identical",
+            "./tests/upstream/identical.txt",
+            "./tests/downstream/identical.txt",
+        );
+        assert_eq!(true, files_identical(&link).unwrap());
     }
 }

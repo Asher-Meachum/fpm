@@ -29,11 +29,11 @@ impl Link {
         self.name.clone()
     }
 
-    pub fn new(name: String, upstream: String, downstream: String) -> Link {
+    pub fn new(name: impl ToString, upstream: impl ToString, downstream: impl ToString) -> Link {
         Link {
-            name,
-            upstream,
-            downstream,
+            name: name.to_string(),
+            upstream: upstream.to_string(),
+            downstream: downstream.to_string(),
         }
     }
 }
